@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Wireframe - 1 (screen_23:11)</title>
+  <link rel="stylesheet" href="/assets/wireframe-1-23-11.css"/>
+</head>
+<body>
+  <main id="screen" role="main" aria-label="Wireframe - 1">
+    <!-- Section: Script Info (Frame 15) -->
+    <section class="card card--script-info" aria-labelledby="hdr-script-info">
+      <h2 id="hdr-script-info" class="card__title">Script Info</h2>
+      <div class="row row--two">
+        <div class="field">
+          <label for="inp-name">Name</label>
+          <input id="inp-name" type="text" />
+        </div>
+        <div class="field">
+          <label for="inp-version">Version</label>
+          <input id="inp-version" type="text" />
+        </div>
+      </div>
+      <div class="row">
+        <div class="field field--block">
+          <label for="inp-description">Description</label>
+          <textarea id="inp-description" rows="3"></textarea>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section: Script Type (Frame 16) -->
+    <section class="card card--script-type" aria-labelledby="hdr-script-type">
+      <h2 id="hdr-script-type" class="card__title">Script  Type</h2>
+      <div class="row row--options">
+        <label class="chk">
+          <input type="checkbox" checked aria-label="Legacy"/>
+          <span class="chk__box" aria-hidden="true"></span>
+          <span class="chk__label">Legacy</span>
+        </label>
+        <label class="chk">
+          <input type="checkbox" aria-label="AirFlow"/>
+          <span class="chk__box" aria-hidden="true"></span>
+          <span class="chk__label">AirFlow</span>
+        </label>
+      </div>
+    </section>
+
+    <!-- Section: Script Origin (Frame 17) -->
+    <section class="card card--script-origin" aria-labelledby="hdr-script-origin">
+      <h2 id="hdr-script-origin" class="card__title">Script  Orgin</h2>
+      <div class="row row--options">
+        <label class="chk">
+          <input type="checkbox" checked aria-label="Local"/>
+          <span class="chk__box" aria-hidden="true"></span>
+          <span class="chk__label">Local</span>
+        </label>
+        <label class="chk">
+          <input type="checkbox" aria-label="Remote"/>
+          <span class="chk__box" aria-hidden="true"></span>
+          <span class="chk__label">Remote</span>
+        </label>
+      </div>
+    </section>
+
+    <!-- Section: File Upload (Frame 18) -->
+    <section class="card card--file-upload" aria-labelledby="hdr-file-upload">
+      <h2 id="hdr-file-upload" class="card__title">File Upload</h2>
+      <div class="row">
+        <div class="upload">
+          <input id="file-upload-input" type="file" />
+          <label for="file-upload-input" class="upload__fake">
+            <span class="upload__icon" aria-hidden="true">⚓</span>
+          </label>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section: Output Handling (Frame 20) -->
+    <section class="card card--output" aria-labelledby="hdr-output">
+      <h2 id="hdr-output" class="card__title">Output  Handling</h2>
+
+      <div class="row">
+        <div class="field field--sm">
+          <label for="inp-action">Action</label>
+          <input id="inp-action" type="text" />
+        </div>
+      </div>
+
+      <div class="row row--two">
+        <div class="field field--sm">
+          <label for="inp-files">Files</label>
+          <input id="inp-files" type="text" />
+        </div>
+        <div class="field field--sm">
+          <label for="inp-bucket-name">Bucket Name</label>
+          <input id="inp-bucket-name" type="text" />
+        </div>
+      </div>
+
+      <div class="row row--two">
+        <div class="field field--sm">
+          <label for="inp-region"> Region</label>
+          <input id="inp-region" type="text" />
+        </div>
+        <div class="field field--sm">
+          <label for="inp-path">Path of Bucket</label>
+          <input id="inp-path" type="text" />
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="field field--block">
+          <label for="inp-script-config">Script Configuration</label>
+          <div class="upload upload--narrow">
+            <input id="file-config-input" type="file" />
+            <label for="file-config-input" class="upload__fake">
+              <span class="upload__icon" aria-hidden="true">⚓</span>
+            </label>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section: Certification (Frame 19) -->
+    <section class="card card--certification" aria-labelledby="hdr-certification">
+      <div class="toggle">
+        <label class="toggle__label" id="hdr-certification">Certification</label>
+        <button id="cert-toggle" type="button" class="toggle__btn" aria-pressed="true" aria-label="Certification toggle">
+          <span class="toggle__knob"></span>
+        </button>
+      </div>
+    </section>
+  </main>
+
+  <script src="/assets/wireframe-1-23-11.js" defer></script>
+</body>
+</html>

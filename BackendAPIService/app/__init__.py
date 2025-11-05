@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, render_template
 from flask_cors import CORS
 from flask_smorest import Api
 import logging
@@ -9,8 +9,14 @@ from .routes.devices import blp_devices
 from .utils.logging_config import configure_logging
 from .db import get_db_collection
 
-# Initialize Flask app
-app = Flask(__name__)
+# Initialize Flask app with static mapping for assets folder
+# Serve assets under /assets so CSS/JS can be loaded by the root page.
+app = Flask(
+    __name__,
+    static_url_path="/assets",
+    static_folder=os.path.join(os.path.dirname(os.path.dirname(__file__)), "..", "assets"),
+    template_folder=os.path.join(os.path.dirname(__file__), "..", "templates"),
+)
 app.url_map.strict_slashes = False
 
 # CORS: allow all origins for demo; can be restricted via env CORS_ORIGINS
@@ -34,6 +40,17 @@ logger.info("App initialization started")
 api = Api(app)
 api.register_blueprint(blp)
 app.register_blueprint(blp_devices)
+
+# PUBLIC_INTERFACE
+@app.get("/", endpoint="root")
+def root():
+    """Serve the main wireframe UI page.
+    Returns:
+        HTML: Renders templates/index.html which includes:
+          - <link rel="stylesheet" href="/assets/wireframe-1-23-11.css">
+          - <script src="/assets/wireframe-1-23-11.js" defer></script>
+    """
+    return render_template("index.html")
 
 # Startup validation: verify MongoDB configuration at boot
 try:
