@@ -1,7 +1,7 @@
 import os
 import logging
 from typing import Tuple
-from pymongo import MongoClient
+from pymongo import MongoClient, ASCENDING
 from pymongo.collection import Collection
 from pymongo.errors import PyMongoError
 
@@ -30,3 +30,15 @@ def get_db_collection() -> Tuple[MongoClient, Collection]:
     except PyMongoError as e:
         logger.exception("Failed to connect to MongoDB")
         raise RuntimeError(f"Failed to connect to MongoDB: {e}") from e
+
+# PUBLIC_INTERFACE
+def ensure_indexes(collection: Collection) -> None:
+    """Create helpful indexes if they do not exist."""
+    try:
+        collection.create_index([("name", ASCENDING)])
+        collection.create_index([("ip_address", ASCENDING)], unique=False)
+        collection.create_index([("device_type", ASCENDING)])
+        collection.create_index([("location", ASCENDING)])
+        logger.info("Indexes ensured on devices collection")
+    except Exception as e:
+        logger.warning("Failed to create indexes: %s", e)

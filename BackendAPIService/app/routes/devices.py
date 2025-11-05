@@ -26,6 +26,7 @@ _collection: Optional[Collection] = None
 
 
 def _get_collection() -> Collection:
+    """Internal lazy init for Mongo collection."""
     global _client, _collection
     if _collection is None:
         _client, _collection = get_db_collection()
@@ -33,6 +34,7 @@ def _get_collection() -> Collection:
 
 
 def _serialize_device(doc: Dict[str, Any]) -> Dict[str, Any]:
+    """Transform MongoDB document to API-friendly shape."""
     doc = dict(doc)
     doc["id"] = str(doc.pop("_id"))
     # Convert last_checked to ISO 8601
@@ -51,7 +53,7 @@ def list_devices():
     Returns: JSON array of devices."""
     try:
         coll = _get_collection()
-        sort_param = request.args.get("sort", "name").strip()
+        sort_param = (request.args.get("sort", "name") or "name").strip()
         direction = ASCENDING
         if sort_param.startswith("-"):
             direction = DESCENDING
@@ -59,12 +61,12 @@ def list_devices():
         else:
             sort_field = safe_sort_field(sort_param)
 
-        search = request.args.get("search", "").strip()
+        search = (request.args.get("search", "") or "").strip()
         query: Dict[str, Any] = {}
         if search:
             term = sanitize_search_term(search)
             # case-insensitive regex search on whitelisted fields
-            ors = [{"%s" % f: {"$regex": term, "$options": "i"}} for f in SEARCHABLE_FIELDS]
+            ors = [{f: {"$regex": term, "$options": "i"}} for f in SEARCHABLE_FIELDS]
             query = {"$or": ors}
 
         cursor = coll.find(query).sort(sort_field, direction)
@@ -72,7 +74,7 @@ def list_devices():
         return jsonify(items), 200
     except PyMongoError as e:
         logger.exception("Database error during list")
-        raise InternalServerError(message="Database error", details=str(e)).to_response()
+        return InternalServerError(message="Database error", details=str(e)).to_response()
 
 
 @blp_devices.route("", methods=["POST"])
@@ -80,9 +82,11 @@ def create_device():
     """Create a new device. Validates payload and returns created device."""
     try:
         payload = request.get_json(silent=True)
-        valid, errors, sanitized = validate_device_payload(payload or {}, partial=False)
+        if payload is None:
+            return BadRequest(message="Request body must be JSON").to_response()
+        valid, errors, sanitized = validate_device_payload(payload, partial=False)
         if not valid:
-            raise BadRequest(message="Validation failed", details=errors).to_response()
+            return BadRequest(message="Validation failed", details=errors).to_response()
 
         # Default values
         sanitized.setdefault("status", "unknown")
@@ -93,11 +97,9 @@ def create_device():
         res = coll.insert_one(sanitized)
         inserted = coll.find_one({"_id": res.inserted_id})
         return jsonify(_serialize_device(inserted)), 201
-    except BadRequest as e:  # pragma: no cover - wrapper path
-        return e.to_response()
     except PyMongoError as e:
         logger.exception("Database error during create")
-        raise InternalServerError(message="Database error", details=str(e)).to_response()
+        return InternalServerError(message="Database error", details=str(e)).to_response()
 
 
 @blp_devices.route("/<id>", methods=["GET"])
@@ -107,18 +109,16 @@ def get_device(id: str):
         try:
             oid = ObjectId(id)
         except Exception:
-            raise NotFound(message="Device not found").to_response()
+            return NotFound(message="Device not found").to_response()
 
         coll = _get_collection()
         doc = coll.find_one({"_id": oid})
         if not doc:
-            raise NotFound(message="Device not found").to_response()
+            return NotFound(message="Device not found").to_response()
         return jsonify(_serialize_device(doc)), 200
-    except NotFound as e:
-        return e.to_response()
     except PyMongoError as e:
         logger.exception("Database error during get")
-        raise InternalServerError(message="Database error", details=str(e)).to_response()
+        return InternalServerError(message="Database error", details=str(e)).to_response()
 
 
 @blp_devices.route("/<id>", methods=["PUT"])
@@ -128,14 +128,17 @@ def update_device(id: str):
         try:
             oid = ObjectId(id)
         except Exception:
-            raise NotFound(message="Device not found").to_response()
+            return NotFound(message="Device not found").to_response()
 
         payload = request.get_json(silent=True)
-        valid, errors, sanitized = validate_device_payload(payload or {}, partial=True)
+        if payload is None:
+            return BadRequest(message="Request body must be JSON").to_response()
+
+        valid, errors, sanitized = validate_device_payload(payload, partial=True)
         if not valid:
-            raise BadRequest(message="Validation failed", details=errors).to_response()
+            return BadRequest(message="Validation failed", details=errors).to_response()
         if not sanitized:
-            raise BadRequest(message="No valid fields to update").to_response()
+            return BadRequest(message="No valid fields to update").to_response()
 
         # Never allow updating _id
         sanitized.pop("_id", None)
@@ -143,14 +146,12 @@ def update_device(id: str):
         coll = _get_collection()
         res = coll.find_one_and_update({"_id": oid}, {"$set": sanitized}, return_document=True)
         if not res:
-            raise NotFound(message="Device not found").to_response()
+            return NotFound(message="Device not found").to_response()
         updated = coll.find_one({"_id": oid})
         return jsonify(_serialize_device(updated)), 200
-    except (BadRequest, NotFound) as e:
-        return e.to_response()
     except PyMongoError as e:
         logger.exception("Database error during update")
-        raise InternalServerError(message="Database error", details=str(e)).to_response()
+        return InternalServerError(message="Database error", details=str(e)).to_response()
 
 
 @blp_devices.route("/<id>", methods=["DELETE"])
@@ -160,17 +161,15 @@ def delete_device(id: str):
         try:
             oid = ObjectId(id)
         except Exception:
-            raise NotFound(message="Device not found").to_response()
+            return NotFound(message="Device not found").to_response()
         coll = _get_collection()
         res = coll.delete_one({"_id": oid})
         if res.deleted_count == 0:
-            raise NotFound(message="Device not found").to_response()
+            return NotFound(message="Device not found").to_response()
         return "", 204
-    except NotFound as e:
-        return e.to_response()
     except PyMongoError as e:
         logger.exception("Database error during delete")
-        raise InternalServerError(message="Database error", details=str(e)).to_response()
+        return InternalServerError(message="Database error", details=str(e)).to_response()
 
 
 @blp_devices.route("/<id>/ping", methods=["POST"])
@@ -180,24 +179,26 @@ def ping_device(id: str):
         try:
             oid = ObjectId(id)
         except Exception:
-            raise NotFound(message="Device not found").to_response()
+            return NotFound(message="Device not found").to_response()
         coll = _get_collection()
         doc = coll.find_one({"_id": oid})
         if not doc:
-            raise NotFound(message="Device not found").to_response()
+            return NotFound(message="Device not found").to_response()
 
         ip = doc.get("ip_address")
         status, ts, error = ping_host(ip)
         # Update document
-        update = {"status": status, "last_checked": datetime.fromisoformat(ts.replace("Z", "+00:00")).astimezone(timezone.utc)}
+        try:
+            ts_dt = datetime.fromisoformat(ts.replace("Z", "+00:00")).astimezone(timezone.utc)
+        except Exception:
+            ts_dt = datetime.now(timezone.utc)
+        update = {"status": status, "last_checked": ts_dt}
         coll.update_one({"_id": oid}, {"$set": update})
 
         resp = {"status": status, "timestamp": ts}
         if error:
             resp["error"] = error
         return jsonify(resp), 200
-    except NotFound as e:
-        return e.to_response()
     except PyMongoError as e:
         logger.exception("Database error during ping")
-        raise InternalServerError(message="Database error", details=str(e)).to_response()
+        return InternalServerError(message="Database error", details=str(e)).to_response()
